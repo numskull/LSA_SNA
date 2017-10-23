@@ -1,0 +1,295 @@
+---
+title: "SNA"
+output: html_document
+---
+
+# SNA (via Newman)
+I'll be adding to this as I get further into the Newman Text.
+# Chapter 6
+## Adjacency Matrices
+Networks are represented in adjacency matrices. These are matrices (A) of values wherein A(i,j) = 1 if there is an edge between i and j and 0 otherwise.
+```{R}
+
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+A
+```
+This matrix represents an undirected graph. It's graphical representation can be seen below:
+```{r}
+library(igraph)
+g = graph.adjacency(A, mode='undirected')
+plot(g, show.arrows=F)
+```
+This kind of graph uses a 1 to represent a connection between two nodes or vertices.  In an undirected graph, if A(i,j) = 1, A(j,i) will also be 1; this is how an undirected graph represents the reciprocity of connection (if there is a connection between Jane and Sally, there is a connection between Sally and Jane).
+### Directed Networks
+Networks can also be directed.  For example, someone may like another person without that affection being reciprocated; they're also used to represent hierarchical relationships.
+```{r}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+dirA
+c = graph.adjacency(dirA)
+plot(c)
+```
+
+#### Cocitation Networks
+It is helpful to turn a directed newtork into an undirected one because there are more analytical methods for undirected than directed networks.  One method for doing this is the cocitation network. The cocitation of two vertices i and j in a directed network is the number of vertices that have outgoing edges pointing to both i and j.
+```{r}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+cocitation = function(mat) { #formula 
+  C = mat %*% t(mat)
+  newMat = mat
+  for(i in 1:length(C[1,])){
+    for(j in 1:length(C[,1])) {
+      if(i != j) {
+        if(C[i,j] > 0) {
+          newMat[i,j] = newMat[i,j] + C[i,j]
+        } else {
+          newMat[i,j] = 0
+        }
+      }
+    }
+  }
+  return(newMat)
+}
+
+new = cocitation(dirA)
+new
+g = graph.adjacency(new, weighted=T, mode="undirected")
+plot(g)
+
+## I'm having a hard time with this one.  Here's an alternative method based on 6.7 in Newman.
+cocitation = function(mat) { # Formula 6.7 in Newman
+  newMat = mat
+  for(i in 1:length(mat[1,])) {
+    for(j in 1:length(mat[,1])) {
+      aik = 0
+      akj = 0
+      for(k in 1:length(mat[1,])) {
+        if(i != j) {
+          aik = aik + mat[i,k]
+          akj = akj + t(mat)[k,j]
+        }
+        newMat[i,j] = aik %*% akj
+      }
+    }
+  }
+  return(newMat)
+}
+
+new = cocitation(dirA)
+new
+g = graph.adjacency(new, weighted=T, mode="undirected")
+plot(g, edge.width=E(g)$weight)
+```
+
+#### Bibliographic Coupling
+The bibliographic coupliing of two vertices in a directed network is the number of other vertices to which both point.
+```{r}
+bibCoupling = function(mat) {
+  B = t(mat) %*% mat
+  newMat = mat
+  for(i in 1:length(B[1,])) {
+    for(j in 1:length(B[,1])){
+      if(B[i,j] > 0){
+        newMat[i,j] = newMat[i,j] + 1
+      }
+    }
+  }
+  return(newMat)
+}
+
+new = bibCoupling(dirA)
+new
+g = graph.adjacency(new, weighted=T, mode="undirected")
+plot(g, edge.width=E(g)$weight)
+```
+
+## Bipartite Networks
+It's helpful, especially in authorship networks, to have a network in which nodes are connected through a shared node (like co-authors being connected by a book). This, however, makes analysis more complex, so it is necessary to project the network into a one-mode network.  Bipartite networks are represented by incidence matrices of irregular dimensions.
+```{r}
+B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
+B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
+colnames(B) = c(1,2,3,4,5)
+rownames(B) = c("A", "B", "C", "D")
+
+B
+g = graph.incidence(B)
+plot(g)
+```
+
+The first kind of projection links the entities (1-5) and weights them based on the number of groups (A-D) they are both members of.
+```{r}
+B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
+B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
+colnames(B) = c(1,2,3,4,5)
+rownames(B) = c("A", "B", "C", "D")
+
+P = t(B) %*% B # Converts the matrix into something similar to an adjacency matrix. Pij is the number of groups to which both i and j belong.
+diag(P) = 0 # Set the diagonal elements to 0 to convert P into an adjacency matrix.
+P
+g = graph.adjacency(P, mode='undirected', weighted=T)
+plot(g, edge.width=E(g)$weight)
+```
+
+The next projection connects the groups (A-D) based on the number of entities (1-5) that they share.
+```{r}
+B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
+B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
+colnames(B) = c(1,2,3,4,5)
+rownames(B) = c("A", "B", "C", "D")
+
+Pp = B %*% t(B) # Project to an adjacency matrix.
+Pp # The diagonals here represent the number of members of each group.
+g = graph.adjacency(Pp, mode='undirected', weighted=T)
+plot(g, edge.width=E(g)$weight)
+```
+
+## Degree Measures
+The degree of a vertex is the number of edges connected to it.
+```{r}
+B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
+B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
+colnames(B) = c(1,2,3,4,5)
+rownames(B) = c("A", "B", "C", "D")
+degree = function(mat, index) { # Newman 6.19
+  return(sum(mat[index,]))
+}
+
+B
+degree(B, 'B') # How many edges are connected to 'B' in the network. Also equivalent to the diagonal value in Pp.
+Pp['B','B']
+
+# Switching to a simpler matrix
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+# Number of edge ends, 6.20
+m2 = sum(A)
+m2
+
+# Mean Degree, 6.23
+c = m2 / length(A[1,])
+c
+```
+
+### Density
+The density or connectedness of a graph can be determined by taking the fraction of the mean connections over the number of possible connections.
+```{r}
+
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+# Number of edge ends, 6.20
+m2 = sum(A)
+
+# Mean Degree, 6.23
+c = m2 / length(A[1,])
+
+# Density, 6.24
+c / (length(A[1,]) - 1)
+```
+
+### Directed Networks
+Determining degree in directed networks is more complex because each vertex will have an in degree and an out degree.
+```{r}
+
+# In-degree, 6.25 (a) where i = 'Marsha'
+kin = sum(dirA['Marsha',])
+kin
+
+# Out-degree. 6.25 (b) where j = 'Marsha'
+kout = sum(dirA[,'Marsha'])
+kout
+```
+
+We also need different measures for determining the number of edges in a directed networks. The number of edges is determined by counting the number of incoming connections.
+```{r}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+numDirEdges = function(mat) { #6.26
+   m = 0
+   for(i in 1:length(mat[,1])){ # iterate over rows
+    m = m + sum(dirA[i,])
+   }
+   return(m)
+}
+m = numDirEdges(dirA)
+m
+
+# Mean Degree, 6.28
+c = m / length(dirA[1,])
+c
+
+```
+
+## Paths
+A path is any sequence of vertices such that every consecutive pair of vertices in the sequence is connected by an edge in the network.  We can measure the total number of paths of a given length:
+```{r}
+library(expm)
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+numPaths = function(A, len){ # 6.31
+  N = 0
+  for(i in 1:length(A[,1])) {
+    for(j in 1:length(A[1,])) {
+      if((A%^%len)[i,j] == len){
+        N = N+1
+      }
+    }
+  }
+  return(N)
+}
+N = numPaths(A, 2)
+
+# Finding the number of loops, 6.32
+numLoops = function(A, len){
+  return(sum(diag(A %^% len)))
+}
+L = numLoops(A, 3)
+L
+
+# Using eigenvalues to find number of loops, 6.33
+numLoops = function(A, len){
+  k = eigen(A)$values
+  L = sum(k^len)
+  return(L)
+}
+L = numLoops(A, 3)
+L
+
+```
+
+## Geodesic Path (distance)
+The Geodesic distance is the minimum number of paths between two nodes in a network.
+```{r}
+geodesic = function(A, i, j) {
+  done = FALSE
+  count = 1
+  
+  while (done == F) {
+    aij = A %^% count
+    if(aij[i,j] > 0) {
+      return(count)
+    }
+    count = count + 1
+  }
+}
+geodesic(A, 2, 5)
+```
