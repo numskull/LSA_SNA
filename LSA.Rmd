@@ -1,0 +1,323 @@
+---
+title: "LSA Notes"
+output: html_document
+---
+Below the reader will find functions and explainations for basic Latent Semantic Analysis principles beginning with distance measurements.
+
+#Distances
+The following measures provide a metric for determining the similarity of terms within a corpus of texts by applying to the principles of vector mathematics to frequency measures in a term-document matrix.
+
+## Euclidean Distance
+Euclidean distance uses the Pythagorean Theorum to find the distance between two term vectors.
+
+```{r}
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+euclid = function(x,y) {
+  return(sqrt(sum((y-x)^2)))
+}
+
+euclid(df['battle',], df['king',])
+```
+## Cosine Distance
+While Euclidean distance can provide a good measure of the distance between vectors, it is overly sensitive to the magnitude of the vectors.  For example, vectors whose magnitudes are smaller (the terms appear less frequently throughout the corpus) will apear to be more similar because they are closer to the origin and thus closer together. Cosine distance corrects for this by dividing the dot product of the vectors by their normalized lengths.
+
+```{r}
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+cosine = function(x,y) {
+  top = x %*% y
+  bottom = sqrt(x%*%x) %*% sqrt(y%*%y)
+  return (top / bottom)
+}
+
+cosine(as.vector(df['battle',]), as.vector(df['king',]))
+```
+We can see that rather than being very far apart (the 775 we got for the euclidean distance), these two concepts are fairly similar in the shakespeare corpus (the closer to 1 the value, the more similar the terms are).
+
+#Normalization
+It is helpful to normalize the values in the term-document matrix.  Basic frequency measures can result in terms being over or underrepresented.  Instead, a normalized matrix weights the term frequencies based on the other data in the corpus so that each term's scores are based on their relationship to the other terms in the whole corpus and in the documents that they appear.
+##PPMI
+Positive Pointwise Mutual Information is a standard way of weighting the values in the matrix.  PPMI starts by normalizing the weight of the given term's frequency in each document by dividing it by the total frequencies of all terms in all documents.  This gives us the probability that the word will appear in a document (pij).  Then PPMI determines the probability that the word will appear in the corpus as a whole (pi), followed by the probability of the word appearing in any given document (pj).  PPMI is then: log(pij/(pi*pj)).  Using PPMI gives us a new, weighted matrix that provides better results when measuring the distances between two terms or concepts.
+```{r}
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+ppmi = function(df) {
+  newDf = df
+  rows = sum(rowSums(df))
+  cols = sum(colSums(df))
+  bottom = rows+cols
+  for(i in 1:length(df[,1])){
+    sumR = sum(df[i,])
+    for(j in 1:length(df[1,])){
+      colSum = sum(df[,j])
+      pij = (df[i,j] / bottom)
+      pi = sumR / bottom
+      pj = colSum / bottom
+      pmi = log(pij/(pi * pj))
+      if (pmi < 0){
+        pmi = 0
+      }
+      newDf[i,j] = pmi
+    }
+  }
+  return(newDf)
+}
+
+df2 = ppmi(df)
+df2[1:5,1:5]
+```
+We can see that the values for this new matrix are much smaller than for the primary frequency matrix:
+```{r}
+df[1:5,1:5]
+
+df2[1:5,1:5]
+```
+## tf-idf
+Term frequency inverse document frequency gives an element a high weight if it is common in the given document, but uncommon in the corpus as a whole.  This means that tf-idf penalizes the words that occur most frequently in the corpus and favors those words that are outliers (because they are likely of more importance).  Tf-idf, then, unlike PPMI, tends to favor infrequently occuring words. (We'll correct for this bias in PPMI below.)
+```{r}
+tfidf = function(df){
+  newDf = df
+  for(i in 1:length(df[,1])){
+    numDocs = length(which(df[i,] > 0)) #number of documents the word is present in.
+    idf = log(length(df[1,]) / numDocs)
+    #browser()
+    for(j in 1:length(df[1,])){
+      tf = df[i,j]
+      tfidf = tf * idf
+      newDf[i,j] = tfidf
+    }
+  }
+  return(newDf)
+}
+
+df4 = tfidf(df)
+df4[1:5,1:5]
+```
+As you can see, tf-idf reduces the weights of common words like thou to zero.
+
+# Using Distance Measures to Find Similar Words
+We can find words that are similar to a given term by computing the distance between a term and all the other terms in the corpus.  Each distance measure will provide different results and the results will vary based on the kind of normalization (or whether the matrix is normalized or not).
+
+## Euclidean Distance Similarity
+We can use euclidean distance measurements to find the words that are closest to any given term in the corpus.
+```{r warning=FALSE }
+euclidSim = function(df, term) {
+  termVec = df[term,]
+  names(termVec) = term
+  distances = c()
+  for(i in 1:length(df[,1])){
+    dist = 0
+    if(row.names(df)[i] != names(termVec)){
+      dist = euclid(termVec, df[i,])
+    }
+    distances[i] = dist
+    names(distances)[i] = row.names(df)[i]
+  }
+  return(distances)
+}
+
+battleSim = euclidSim(df, 'battle')
+sort(battleSim)[2:11] #Skip the first, lowest value which is always the given term.
+```
+It's clear that these results are what we might expect to be close to the word battle in the shakespeare corpus.  They're much closer than the terms that are totally different in the corpus:
+```{R}
+sort(battleSim, decreasing=TRUE)[1:10]
+```
+## Cosine Similarity
+Using the magnitude-regulated cosine similarity, we can get more robust results.  Cosine similarity measures the angle between the two term vectors in the corpus and thus considers the contexts in which the term appears more fully rather than the raw frequency of the terms across the corpus.
+```{r warning=FALSE}
+cosineSim = function(df, term) {
+  df = as.matrix(df)
+  termVec = df[term,]
+  names(termVec) = term
+  distances = c()
+  for(i in 1:length(df[,1])){
+    dist = 0
+    if(row.names(df)[i] != names(termVec)){
+      dist = cosine(termVec, df[i,])
+    }
+    distances[i] = dist
+    names(distances)[i] = row.names(df)[i]
+  }
+  return(distances)
+}
+
+battleCos = cosineSim(df, 'battle')
+sort(battleCos, decreasing=TRUE)[1:10] # Needs to be reverse sorted because cosine sim will be 0 <= sim <= 1 where 1 is perfect correspondence between the terms.
+```
+The cosine similarity results provide a more robust results by incorporating less frequent, but more similar terms like valiant, flourish, and yield.
+
+## Similarity Post-PPMI
+Post-PPMI similarity scores are even better because they begin with normalized values that adjust the term's frequency based on the whole corpus.The post-ppmi values seem to provide an instrumental-governmental view of battle:
+```{r warning=FALSE}
+battleSim = euclidSim(df2, 'battle') #Uses our PPMI data frame from above.
+sort(battleSim)[2:11]
+
+battleCos = cosineSim(df2, 'battle')
+sort(battleCos, decreasing=TRUE)[1:10]
+
+```
+
+## Similarity Post-tfidf
+Similarly, post-tfidf can provide different results by allowing us to ignore the values of terms that occur most frequently and in most documents because these values are already all zeros. Tfidf gives us similar terms as the straight cosine distance does above:
+```{r warning=FALSE}
+battleSim = euclidSim(df4, 'battle') #Uses our tfidf data frame from above.
+sort(battleSim)[2:11]
+
+battleCos = cosineSim(df4, 'battle')
+sort(battleCos, decreasing=TRUE)[1:10]
+
+```
+# Singular Value Decomposition
+Singular Value Decomposition (SVD), via magic, breaks the matrix into three separate, smaller matrices that have factored out irrelevant terms.  The values in the term matrix (U) are scored based on their semantic relationship to other terms (more similar terms have higher values); likewise, the document matrix (V) represents the conceptual structure of the documents. According to Bellegarda, these matrices "amount to representing each unit and each composition as a linear composition of (hidden) abstract concepts" (11).  The mapping matrix (S) serves to create a correspondence between the two matrices and enables complex mathematical analysis.
+```{r}
+s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+
+u[1:5,1:5]
+v[1:5,1:5]
+s[1:5,1:5]
+```
+## Unit-Unit Comparison
+SVD allows for much faster computation of the similarity scores between terms or between a term and all the other words in the corpus.  Additionally, these results are based more on the "hidden" conceptual function of the terms across the corpus.
+```{r}
+unitUnit = function(df, termOne, termTwo) {
+  i = which(row.names(df) == termOne)
+  j = which(row.names(df) == termTwo)
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  us = u %*% s
+  #browser()
+  top = u[i,] %*% s %*% s %*% t(u)[,j]
+  bottom = sqrt((us[i,] %*% us[i,])) %*% sqrt((us[j,] %*% us[j,]))
+  
+  return(top/bottom)
+}
+
+unitUnit(df, 'king', 'battle') # Similarity scores between two specific terms.
+
+unitUnitSim = function(df, term) {
+  i = which(row.names(df) == term)
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  us = u %*% s
+  terms = c()
+  for(j in 1:length(u[,1])){
+    dist = 0
+    if(j != i) {
+      top = top = u[i,] %*% s %*% s %*% t(u)[,j]
+      bottom = sqrt((us[i,] %*% us[i,])) %*% sqrt((us[j,] %*% us[j,]))
+      dist = top / bottom
+      terms[j] = dist
+      #browser()
+      names(terms)[j] = row.names(df)[j]
+    }
+  }
+  return(terms)
+}
+
+topBattle = unitUnitSim(df, 'battle') # How similar are all terms in the corpus to battle.
+sort(topBattle, decreasing=TRUE)[1:10] # The 10 most similar terms to battle in the corpus.
+```
+We can see that we get the same values as we do when we take the cosine similarity of battle across the corpus above. 
+
+## Composition-Composition Comparison
+The Unit-Composition comparison allows us to compute the similarity between documents in the corpus.
+```{r}
+df = read.csv('shakespeare.csv', row.names=1)
+compComp = function(df, d1, d2) {
+  i = which(names(df) == d1)
+  j = which(names(df) == d2)
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  
+  vs = v %*% s
+  top = v[i,] %*% s %*% s %*% t(v)[,j]
+  bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
+  return(top / bottom)
+}
+
+compComp(df, names(df)[2], names(df)[4]) #1H6 and 2H6
+
+compCompSim = function(df, d1) {
+  i = which(names(df) == d1)
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  docs = c()
+  vs = v %*% s
+  for(j in 1:length(v[1,])) {
+    dist = 0
+    if(j != i) {
+      top = v[i,] %*% s %*% s %*% t(v)[,j]
+      bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
+      dist = top / bottom
+      docs[j] = dist
+      names(docs)[j] = names(df)[j]
+    }
+  }
+  return(docs)
+}
+H6 = compCompSim(df, names(df)[2])
+sort(H6, decreasing=T)[1:10] # Which documents are most similar to 1 Henry 6
+```
+It makes a lot of sense that 1H6 is most similar to 2H6 here.
+## Unit-Composition Comparison
+The Unit-composition comparison allows us to measure the similarity between a word and a document; that is, how representative is the word for that document and vice versa.
+```{r}
+unitComp = function(df, term, doc) {
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  i = which(row.names(df) == term)
+  j = which(names(df) == doc)
+  
+  us = u %*% sqrt(s)
+  vs = v %*% sqrt(s)
+  top = u[i,] %*% s %*% t(v)[,j]
+  bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
+  return(top/bottom)
+}
+
+unitComp(df, 'battle', 'H5') # How similar/important is the concept of battle to Henry 5
+
+unitCompSim = function(df, term="", comp="") {
+  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
+  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
+  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+  us = u %*% sqrt(s)
+  vs = v %*% sqrt(s)
+  if(term != "") {
+    i = which(row.names(df) == term)
+    docs = c()
+    for(j in 1:length(v[1,])) {
+      dist = 0
+      top = u[i,] %*% s %*% t(v)[,j]
+      bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
+      docs[j] = top / bottom
+      names(docs)[j] = names(df)[j]
+    }
+    return(docs)
+  } else if(comp != "") {
+    i = which(names(df) == comp)
+    docs = c()
+    for(j in 1:length(u[,1])) {
+      dist = 0
+      top = u[j,] %*% s %*% t(v)[,i]
+      bottom = sqrt(us[j,] %*% us[j,]) %*% sqrt(vs[i,] %*% vs[i,])
+      docs[j] = top / bottom
+      names(docs)[j] = row.names(df)[j]
+    }
+    return(docs)
+  } else {
+    echo("Please provide only one value.")
+  }
+}
+test = unitCompSim(df, 'battle') # How similar is battle to all documents
+sort(test, decreasing=T)[1:10] # What documents are most similar to the concept battle
+
+test = unitCompSim(df, "", "H5") # What terms are most similar to H5?
+sort(test, decreasing=T)[1:10]
+```
