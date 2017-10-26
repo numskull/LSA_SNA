@@ -14,19 +14,17 @@ cosine = function(x,y) {
   return (top / bottom)
 }
 
-ppmi = function(df) {
+ppmi = function(df) { # Turney and Pantel, p. 157
   newDf = df
-  rows = sum(rowSums(df))
-  cols = sum(colSums(df))
-  browser()
-  bottom = rows+cols
+  total = sum(df)
+  bottom = total
   for(i in 1:length(df[,1])){
     sumR = sum(df[i,])
     for(j in 1:length(df[1,])){
       colSum = sum(df[,j])
-      pij = (df[i,j] / bottom)
-      pi = sumR / bottom
-      pj = colSum / bottom
+      pij = (df[i,j] / total)
+      pi = sumR / total
+      pj = colSum / total
       pmi = log(pij/(pi * pj))
       #browser()
       if (pmi < 0){
@@ -201,4 +199,11 @@ unitCompSim = function(df, term="", comp="") {
     echo("Please provide only one value.")
   }
 }
+
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+s = svd(df, nv=5, nu=5)
+v = s$v
+u = s$u
+s = diag(s$d[1:5])
+
 

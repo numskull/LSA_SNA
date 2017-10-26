@@ -35,23 +35,24 @@ We can see that rather than being very far apart (the 775 we got for the euclide
 
 #Normalization
 It is helpful to normalize the values in the term-document matrix.  Basic frequency measures can result in terms being over or underrepresented.  Instead, a normalized matrix weights the term frequencies based on the other data in the corpus so that each term's scores are based on their relationship to the other terms in the whole corpus and in the documents that they appear.
+
 ##PPMI
 Positive Pointwise Mutual Information is a standard way of weighting the values in the matrix.  PPMI starts by normalizing the weight of the given term's frequency in each document by dividing it by the total frequencies of all terms in all documents.  This gives us the probability that the word will appear in a document (pij).  Then PPMI determines the probability that the word will appear in the corpus as a whole (pi), followed by the probability of the word appearing in any given document (pj).  PPMI is then: log(pij/(pi*pj)).  Using PPMI gives us a new, weighted matrix that provides better results when measuring the distances between two terms or concepts.
 ```{r}
 df = as.matrix(read.csv('shakespeare.csv', row.names=1))
-ppmi = function(df) {
+ppmi = function(df) { # Turney and Pantel, p. 157
   newDf = df
-  rows = sum(rowSums(df))
-  cols = sum(colSums(df))
-  bottom = rows+cols
+  total = sum(df)
+  bottom = total
   for(i in 1:length(df[,1])){
     sumR = sum(df[i,])
     for(j in 1:length(df[1,])){
       colSum = sum(df[,j])
-      pij = (df[i,j] / bottom)
-      pi = sumR / bottom
-      pj = colSum / bottom
+      pij = (df[i,j] / total)
+      pi = sumR / total
+      pj = colSum / total
       pmi = log(pij/(pi * pj))
+      #browser()
       if (pmi < 0){
         pmi = 0
       }
@@ -63,7 +64,26 @@ ppmi = function(df) {
 
 df2 = ppmi(df)
 df2[1:5,1:5]
+
+# Gavin Version
+ppmi = function(mat) {
+  total = sum(mat, na.rm = T)
+  pcol = colSums(mat) / total
+  prow = rowSums(mat) / total
+  for (i in 1:nrow(mat)) {
+    row = mat[i,]
+    row = row / total
+    row = log(row / (prow[i] * pcol))
+    ord = which(row < 0)
+    row[ord] = 0
+    mat[i,] = row
+  }
+  return(mat)
+}
+df2 = ppmi(df)
+df2[1:5,1:5]
 ```
+
 We can see that the values for this new matrix are much smaller than for the primary frequency matrix:
 ```{r}
 df[1:5,1:5]
@@ -169,9 +189,11 @@ sort(battleCos, decreasing=TRUE)[1:10]
 # Singular Value Decomposition
 Singular Value Decomposition (SVD), via magic, breaks the matrix into three separate, smaller matrices that have factored out irrelevant terms.  The values in the term matrix (U) are scored based on their semantic relationship to other terms (more similar terms have higher values); likewise, the document matrix (V) represents the conceptual structure of the documents. According to Bellegarda, these matrices "amount to representing each unit and each composition as a linear composition of (hidden) abstract concepts" (11).  The mapping matrix (S) serves to create a correspondence between the two matrices and enables complex mathematical analysis.
 ```{r}
-s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+s = svd(df, nv=5, nu=5)
+v = s$v
+u = s$u
+s = diag(s$d[1:5])
 
 u[1:5,1:5]
 v[1:5,1:5]
@@ -180,12 +202,15 @@ s[1:5,1:5]
 ## Unit-Unit Comparison
 SVD allows for much faster computation of the similarity scores between terms or between a term and all the other words in the corpus.  Additionally, these results are based more on the "hidden" conceptual function of the terms across the corpus.
 ```{r}
-unitUnit = function(df, termOne, termTwo) {
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+s = svd(df, nv=5, nu=5)
+v = s$v
+u = s$u
+s = diag(s$d[1:5])
+
+unitUnit = function(df, u,s, termOne, termTwo) {
   i = which(row.names(df) == termOne)
   j = which(row.names(df) == termTwo)
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
   us = u %*% s
   #browser()
   top = u[i,] %*% s %*% s %*% t(u)[,j]
@@ -194,16 +219,13 @@ unitUnit = function(df, termOne, termTwo) {
   return(top/bottom)
 }
 
-unitUnit(df, 'king', 'battle') # Similarity scores between two specific terms.
+unitUnit(df, u,s, 'king', 'battle') # Similarity scores between two specific terms.
 
-unitUnitSim = function(df, term) {
+unitUnitSim = function(df,u,s, term) {
   i = which(row.names(df) == term)
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
   us = u %*% s
   terms = c()
-  for(j in 1:length(u[,1])){
+  for(j in 1:nrow(u)){
     dist = 0
     if(j != i) {
       top = top = u[i,] %*% s %*% s %*% t(u)[,j]
@@ -217,7 +239,7 @@ unitUnitSim = function(df, term) {
   return(terms)
 }
 
-topBattle = unitUnitSim(df, 'battle') # How similar are all terms in the corpus to battle.
+topBattle = unitUnitSim(df,u, s, 'battle') # How similar are all terms in the corpus to battle.
 sort(topBattle, decreasing=TRUE)[1:10] # The 10 most similar terms to battle in the corpus.
 ```
 We can see that we get the same values as we do when we take the cosine similarity of battle across the corpus above. 
@@ -225,54 +247,57 @@ We can see that we get the same values as we do when we take the cosine similari
 ## Composition-Composition Comparison
 The Unit-Composition comparison allows us to compute the similarity between documents in the corpus.
 ```{r}
-df = read.csv('shakespeare.csv', row.names=1)
-compComp = function(df, d1, d2) {
-  i = which(names(df) == d1)
-  j = which(names(df) == d2)
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
-  
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+s = svd(df, nv=5, nu=5)
+v = s$v
+u = s$u
+s = diag(s$d[1:5])
+compComp = function(df,v,s, d1, d2) {
+  i = which(colnames(df) == d1)
+  j = which(colnames(df) == d2)
+  #browser()
   vs = v %*% s
   top = v[i,] %*% s %*% s %*% t(v)[,j]
   bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
   return(top / bottom)
 }
 
-compComp(df, names(df)[2], names(df)[4]) #1H6 and 2H6
+compComp(df,v,s, colnames(df)[2], colnames(df)[4]) #1H6 and 2H6
 
-compCompSim = function(df, d1) {
-  i = which(names(df) == d1)
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+compCompSim = function(df,v,s, d1) {
+  i = which(colnames(df) == d1)
   docs = c()
   vs = v %*% s
-  for(j in 1:length(v[1,])) {
+  for(j in 1:nrow(v)) {
     dist = 0
     if(j != i) {
       top = v[i,] %*% s %*% s %*% t(v)[,j]
       bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       dist = top / bottom
       docs[j] = dist
-      names(docs)[j] = names(df)[j]
+      names(docs)[j] = colnames(df)[j]
     }
   }
   return(docs)
 }
-H6 = compCompSim(df, names(df)[2])
+H6 = compCompSim(df, v,s, colnames(df)[2])
 sort(H6, decreasing=T)[1:10] # Which documents are most similar to 1 Henry 6
 ```
+
 It makes a lot of sense that 1H6 is most similar to 2H6 here.
+
 ## Unit-Composition Comparison
 The Unit-composition comparison allows us to measure the similarity between a word and a document; that is, how representative is the word for that document and vice versa.
 ```{r}
-unitComp = function(df, term, doc) {
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+df = as.matrix(read.csv('shakespeare.csv', row.names=1))
+s = svd(df, nv=5, nu=5)
+v = s$v
+u = s$u
+s = diag(s$d[1:5])
+unitComp = function(df, u,s,v, term, doc) {
+  
   i = which(row.names(df) == term)
-  j = which(names(df) == doc)
+  j = which(colnames(df) == doc)
   
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
@@ -281,29 +306,26 @@ unitComp = function(df, term, doc) {
   return(top/bottom)
 }
 
-unitComp(df, 'battle', 'H5') # How similar/important is the concept of battle to Henry 5
+unitComp(df,u,s,v, 'battle', 'H5') # How similar/important is the concept of battle to Henry 5
 
-unitCompSim = function(df, term="", comp="") {
-  s = diag(svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$d)
-  v = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$v
-  u = svd(df, nv=min(length(df[1,]), length(df[,1])), nu=min(length(df[1,]), length(df[,1])))$u
+unitCompSim = function(df,u,s,v, term="", comp="") {
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
   if(term != "") {
     i = which(row.names(df) == term)
     docs = c()
-    for(j in 1:length(v[1,])) {
+    for(j in 1:nrow(v)) {
       dist = 0
       top = u[i,] %*% s %*% t(v)[,j]
       bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       docs[j] = top / bottom
-      names(docs)[j] = names(df)[j]
+      names(docs)[j] = colnames(df)[j]
     }
     return(docs)
   } else if(comp != "") {
-    i = which(names(df) == comp)
+    i = which(colnames(df) == comp)
     docs = c()
-    for(j in 1:length(u[,1])) {
+    for(j in 1:nrow(u)) {
       dist = 0
       top = u[j,] %*% s %*% t(v)[,i]
       bottom = sqrt(us[j,] %*% us[j,]) %*% sqrt(vs[i,] %*% vs[i,])
@@ -315,9 +337,9 @@ unitCompSim = function(df, term="", comp="") {
     echo("Please provide only one value.")
   }
 }
-test = unitCompSim(df, 'battle') # How similar is battle to all documents
+test = unitCompSim(df, u,s,v, 'battle') # How similar is battle to all documents
 sort(test, decreasing=T)[1:10] # What documents are most similar to the concept battle
 
-test = unitCompSim(df, "", "H5") # What terms are most similar to H5?
+test = unitCompSim(df,u, s, v, "", "H5") # What terms are most similar to H5?
 sort(test, decreasing=T)[1:10]
 ```
