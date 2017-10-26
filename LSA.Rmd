@@ -12,7 +12,7 @@ Euclidean distance uses the Pythagorean Theorum to find the distance between two
 
 ```{r}
 df = as.matrix(read.csv('shakespeare.csv', row.names=1))
-euclid = function(x,y) {
+euclid = function(x,y) {  # Widdows 5.11
   return(sqrt(sum((y-x)^2)))
 }
 
@@ -23,7 +23,7 @@ While Euclidean distance can provide a good measure of the distance between vect
 
 ```{r}
 df = as.matrix(read.csv('shakespeare.csv', row.names=1))
-cosine = function(x,y) {
+cosine = function(x,y) { # Widdows 5.12
   top = x %*% y
   bottom = sqrt(x%*%x) %*% sqrt(y%*%y)
   return (top / bottom)
@@ -168,6 +168,7 @@ The cosine similarity results provide a more robust results by incorporating les
 ## Similarity Post-PPMI
 Post-PPMI similarity scores are even better because they begin with normalized values that adjust the term's frequency based on the whole corpus.The post-ppmi values seem to provide an instrumental-governmental view of battle:
 ```{r warning=FALSE}
+df2 = ppmi(df)
 battleSim = euclidSim(df2, 'battle') #Uses our PPMI data frame from above.
 sort(battleSim)[2:11]
 
@@ -179,6 +180,7 @@ sort(battleCos, decreasing=TRUE)[1:10]
 ## Similarity Post-tfidf
 Similarly, post-tfidf can provide different results by allowing us to ignore the values of terms that occur most frequently and in most documents because these values are already all zeros. Tfidf gives us similar terms as the straight cosine distance does above:
 ```{r warning=FALSE}
+df4 = tfidf(df)
 battleSim = euclidSim(df4, 'battle') #Uses our tfidf data frame from above.
 sort(battleSim)[2:11]
 
@@ -208,7 +210,7 @@ v = s$v
 u = s$u
 s = diag(s$d[1:5])
 
-unitUnit = function(df, u,s, termOne, termTwo) {
+unitUnit = function(df, u,s, termOne, termTwo) {  # Bellegarda 3.2
   i = which(row.names(df) == termOne)
   j = which(row.names(df) == termTwo)
   us = u %*% s
@@ -252,7 +254,7 @@ s = svd(df, nv=5, nu=5)
 v = s$v
 u = s$u
 s = diag(s$d[1:5])
-compComp = function(df,v,s, d1, d2) {
+compComp = function(df,v,s, d1, d2) {  # Bellegarda 3.5
   i = which(colnames(df) == d1)
   j = which(colnames(df) == d2)
   #browser()
@@ -294,7 +296,7 @@ s = svd(df, nv=5, nu=5)
 v = s$v
 u = s$u
 s = diag(s$d[1:5])
-unitComp = function(df, u,s,v, term, doc) {
+unitComp = function(df, u,s,v, term, doc) {  # Bellegarda 3.6
   
   i = which(row.names(df) == term)
   j = which(colnames(df) == doc)

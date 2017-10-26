@@ -5,7 +5,9 @@ output: html_document
 
 # SNA (via Newman)
 I'll be adding to this as I get further into the Newman Text.
+
 # Chapter 6
+
 ## Adjacency Matrices
 Networks are represented in adjacency matrices. These are matrices (A) of values wherein A(i,j) = 1 if there is an edge between i and j and 0 otherwise.
 ```{R}
@@ -17,7 +19,7 @@ rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 A
 ```
 This matrix represents an undirected graph. It's graphical representation can be seen below:
-```{r}
+```{r, message=F, warning=F}
 library(igraph)
 g = graph.adjacency(A, mode='undirected')
 plot(g, show.arrows=F)
@@ -42,67 +44,25 @@ dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0
 dirA = matrix(dirA, 6, 6)
 colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
 rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
-cocitation = function(mat) { #formula 
+cocitation = function(mat) { # Formula 6.8 in Newman.
   C = mat %*% t(mat)
-  newMat = mat
-  for(i in 1:length(C[1,])){
-    for(j in 1:length(C[,1])) {
-      if(i != j) {
-        if(C[i,j] > 0) {
-          newMat[i,j] = newMat[i,j] + C[i,j]
-        } else {
-          newMat[i,j] = 0
-        }
-      }
-    }
-  }
-  return(newMat)
+  return(C)
 }
+
 
 new = cocitation(dirA)
 new
 g = graph.adjacency(new, weighted=T, mode="undirected")
 plot(g)
 
-## I'm having a hard time with this one.  Here's an alternative method based on 6.7 in Newman.
-cocitation = function(mat) { # Formula 6.7 in Newman
-  newMat = mat
-  for(i in 1:length(mat[1,])) {
-    for(j in 1:length(mat[,1])) {
-      aik = 0
-      akj = 0
-      for(k in 1:length(mat[1,])) {
-        if(i != j) {
-          aik = aik + mat[i,k]
-          akj = akj + t(mat)[k,j]
-        }
-        newMat[i,j] = aik %*% akj
-      }
-    }
-  }
-  return(newMat)
-}
-
-new = cocitation(dirA)
-new
-g = graph.adjacency(new, weighted=T, mode="undirected")
-plot(g, edge.width=E(g)$weight)
 ```
 
 #### Bibliographic Coupling
 The bibliographic coupliing of two vertices in a directed network is the number of other vertices to which both point.
 ```{r}
-bibCoupling = function(mat) {
+bibCoupling = function(mat) { # Newman 6.11
   B = t(mat) %*% mat
-  newMat = mat
-  for(i in 1:length(B[1,])) {
-    for(j in 1:length(B[,1])){
-      if(B[i,j] > 0){
-        newMat[i,j] = newMat[i,j] + 1
-      }
-    }
-  }
-  return(newMat)
+  return(B)
 }
 
 new = bibCoupling(dirA)
@@ -131,6 +91,7 @@ B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
 colnames(B) = c(1,2,3,4,5)
 rownames(B) = c("A", "B", "C", "D")
 
+# Newman p. 126
 P = t(B) %*% B # Converts the matrix into something similar to an adjacency matrix. Pij is the number of groups to which both i and j belong.
 diag(P) = 0 # Set the diagonal elements to 0 to convert P into an adjacency matrix.
 P
@@ -145,6 +106,7 @@ B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
 colnames(B) = c(1,2,3,4,5)
 rownames(B) = c("A", "B", "C", "D")
 
+# Newman p. 126
 Pp = B %*% t(B) # Project to an adjacency matrix.
 Pp # The diagonals here represent the number of members of each group.
 g = graph.adjacency(Pp, mode='undirected', weighted=T)
@@ -158,6 +120,7 @@ B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
 B = matrix(B, byrow = T, 4,5)  # Matrix 6.16 in Newman
 colnames(B) = c(1,2,3,4,5)
 rownames(B) = c("A", "B", "C", "D")
+
 degree = function(mat, index) { # Newman 6.19
   return(sum(mat[index,]))
 }
@@ -237,8 +200,9 @@ c
 ```
 
 ## Paths
+
 A path is any sequence of vertices such that every consecutive pair of vertices in the sequence is connected by an edge in the network.  We can measure the total number of paths of a given length:
-```{r}
+```{r, message=F, warning=F}
 library(expm)
 A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
 A = matrix(A, 6,6)
@@ -279,6 +243,7 @@ L
 ## Geodesic Path (distance)
 The Geodesic distance is the minimum number of paths between two nodes in a network.
 ```{r}
+#Newman p. 139.
 geodesic = function(A, i, j) {
   done = FALSE
   count = 1

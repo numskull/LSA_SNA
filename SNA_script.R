@@ -3,21 +3,9 @@ A = matrix(A, 6,6)
 dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
 dirA = matrix(dirA, 6, 6)
 
-cocitation = function(mat) { #formula 
+cocitation = function(mat) { # Formula 6.8 in Newman.
   C = mat %*% t(mat)
-  newMat = mat
-  for(i in 1:length(C[1,])){
-    for(j in 1:length(C[,1])) {
-      if(i != j) {
-        if(C[i,j] > 0) {
-          newMat[i,j] = newMat[i,j] + C[i,j]
-        } else {
-          newMat[i,j] = 0
-        }
-      }
-    }
-  }
-  return(newMat)
+  return(C)
 }
 
 cocitation = function(mat) { # Formula 6.7 in Newman
@@ -39,21 +27,26 @@ cocitation = function(mat) { # Formula 6.7 in Newman
   return(newMat)
 }
 
-bibCoupling = function(mat) {
+bibCoupling = function(mat) { # Newman 6.11
   B = t(mat) %*% mat
-  newMat = mat
-  for(i in 1:length(B[1,])) {
-    for(j in 1:length(B[,1])){
-      if(B[i,j] > 0){
-        newMat[i,j] = newMat[i,j] + 1
-      }
-    }
-  }
-  return(newMat)
+  return(B)
 }
 
+# bibCoupling = function(mat) {
+#   B = t(mat) %*% mat
+#   newMat = mat
+#   for(i in 1:length(B[1,])) {
+#     for(j in 1:length(B[,1])){
+#       if(B[i,j] > 0){
+#         newMat[i,j] = newMat[i,j] + 1
+#       }
+#     }
+#   }
+#   return(newMat)
+# }
 
-degree = function(mat, index) {
+
+degree = function(mat, index) { # Newman 6.19
   return(sum(mat[index,]))
 }
 
@@ -63,11 +56,11 @@ g = graph.incidence(B)
 plot(g)
 
 m2 = 0
-for(i in 1:length(B[,1])) {
+for(i in 1:length(B[,1])) { # Newman 6.20
   m2 = m2 + degree(B, i)
 }
 
-numPaths = function(A, len){ # 6.31
+numPaths = function(A, len){ # Newman 6.31
   N = 0
   for(i in 1:length(A[,1])) {
     for(j in 1:length(A[1,])) {
