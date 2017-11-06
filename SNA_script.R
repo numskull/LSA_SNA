@@ -27,6 +27,31 @@ cocitation = function(mat) { # Formula 6.7 in Newman
   return(newMat)
 }
 
+betweenness = function(A) {
+  geos = A
+  bets = c()
+  bet = c()
+  for(i in 1:nrow(A)){
+    for(j in 1:ncol(A)) {
+      geos[i,j] = geodesic(A,i,j)
+    }
+  }
+  
+  for(s in 1:nrow(A)) {
+    for(t in 1:ncol(A)) {
+      bet[t] = 0
+      for(i in 1:nrow(A)) {
+        if(geos[s,i] > 0 && geos[t,i] > 0){
+          bet[t] = bet[t] + 1
+        }
+      }
+      bet[t] = bet[t]
+    }
+    bets[s] = sum(bet)/ geos[s,t]
+  }
+  return(bets)
+}
+
 bibCoupling = function(mat) { # Newman 6.11
   B = t(mat) %*% mat
   return(B)
@@ -89,4 +114,62 @@ geodesic = function(A, i, j) {
     }
     count = count + 1
   }
+}
+
+### Trying Random Walk stuff
+p = A %*% solve(D) %*% P # 6.58
+p
+L = D-A
+pp = L %*% solve(D) %*% p # 6.59
+pp
+
+eigenCent = function(A) {
+  x = degreeCent(A)
+  E = c()
+  k = max(as.numeric(eigen(A)$values)) # Directed graphs give complex number values.
+  for(i in 1:nrow(A)) {
+    E[i] = (A[i,] %*% x)
+    #browser()
+    E[i] = k^-1 * E[i]
+    names(E)[i] = row.names(A)[i]
+  }
+  return(E)
+}
+
+katz = function(A) { # 7.12 (7.9) in Newman
+  k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
+  alpha = 1/k - .05 # Slightly less than 1/max eigenvalue
+  B = rep(1, nrow(A))
+  x = rep(0, nrow(A)) #start with initial bad estimate of centrality
+  for(i in 1:ncol(A)) {
+    x = alpha*(A %*% x) + B
+  }
+  return(x)
+}
+
+pageRank = function(A) { # Eq. 7.17 in Newman
+  D = diag(degreeCent(A))
+  alpha = 1/(max(as.numeric(eigen(A)$values)) - .05)
+  B = rep(1, nrow(A))
+  x = D%*%solve(D-(alpha * A))%*%B
+  row.names(x) = row.names(A)
+  return(x)
+}
+
+cluster = function(A){
+  top = 0
+  bottom = numPaths(A, 2)
+  for(i in 1:nrow(A)){
+    for(j in 1:ncol(A)){
+      for(k in 1:ncol(A)){
+        if(i !=j && j != k && i != k){
+          if(A[i,k] > 0 && A[j,k] > 0 && A[i,j] > 0){
+            top = top + 1
+          }
+        }
+      }
+    }
+  }
+  C = top / bottom
+  return(C)
 }

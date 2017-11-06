@@ -7,8 +7,9 @@ output: html_document
 I'll be adding to this as I get further into the Newman Text.
 
 # Chapter 6
-
+***
 ## Adjacency Matrices
+***
 Networks are represented in adjacency matrices. These are matrices (A) of values wherein A(i,j) = 1 if there is an edge between i and j and 0 otherwise.
 ```{R}
 
@@ -72,6 +73,7 @@ plot(g, edge.width=E(g)$weight)
 ```
 
 ## Bipartite Networks
+***
 It's helpful, especially in authorship networks, to have a network in which nodes are connected through a shared node (like co-authors being connected by a book). This, however, makes analysis more complex, so it is necessary to project the network into a one-mode network.  Bipartite networks are represented by incidence matrices of irregular dimensions.
 ```{r}
 B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
@@ -114,6 +116,7 @@ plot(g, edge.width=E(g)$weight)
 ```
 
 ## Degree Measures
+***
 The degree of a vertex is the number of edges connected to it.
 ```{r}
 B = c(1,0,0,1,0,1,1,1,1,0,0,1,1,0,1,0,0,1,1,1)
@@ -157,10 +160,10 @@ rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 m2 = sum(A)
 
 # Mean Degree, 6.23
-c = m2 / length(A[1,])
+c = m2 / ncol(A)
 
 # Density, 6.24
-c / (length(A[1,]) - 1)
+c / (ncol(A) - 1)
 ```
 
 ### Directed Networks
@@ -200,7 +203,7 @@ c
 ```
 
 ## Paths
-
+***
 A path is any sequence of vertices such that every consecutive pair of vertices in the sequence is connected by an edge in the network.  We can measure the total number of paths of a given length:
 ```{r, message=F, warning=F}
 library(expm)
@@ -240,10 +243,11 @@ L
 
 ```
 
-## Geodesic Path (distance)
+### Geodesic Path (distance)
 The Geodesic distance is the minimum number of paths between two nodes in a network.
-```{r}
+```{r warning=F}
 #Newman p. 139.
+library(expm)
 geodesic = function(A, i, j) {
   done = FALSE
   count = 1
@@ -258,3 +262,274 @@ geodesic = function(A, i, j) {
 }
 geodesic(A, 2, 5)
 ```
+
+### Random Walks
+```{r}
+ranWalk = function(A, n1, steps) { # Newman section 6.14
+  P = c()
+  for(i in 1:nrow(A)){
+    P[i] = degree(A,i) / sum(A)
+  }
+  walk = c()
+  
+  for(i in n1:steps){ # i is number of steps we're on now.
+   
+   for(j in 1:nrow(A)) { # Node we're on now.
+     prob = c()
+     for(k in 1:nrow(A)) { # find next node.
+       prob[k] = A[j,k]/degree(A,k) * P[k-1]
+       #browser()
+     }
+     #browser()
+     walk[j] = row.names(A)[which.max(prob)]
+   }
+  }
+  
+  return(walk)
+}
+
+walk = ranWalk(A, 2, 4)
+walk
+```
+
+# Chapter 7
+***
+## Centrality
+***
+Centrality provides a measure of how important a given node is to the network structure and can enable us to find the most important nodes.
+
+### Degree Centrality
+Degree centrality is the simplest method of calculating centrality and just uses the degree measure above to determine a node's importance.  The basic premise is that a node with a lot of connections must be important to the network.
+```{r}
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+degreeCent = function(A) { # Section 7.2
+  cents = c()
+  for(i in 1:nrow(A)){
+    cents[i] = degree(A, i)
+    names(cents)[i] = row.names(A)[i]
+  }
+  return(cents)
+}
+
+D = degreeCent(A)
+D
+```
+
+### Eigenvector Centrality
+Eigenvector centrality "gives each vertex a score proportional to the sum of the scores of its neighbors" (Newman 169).
+```{r}
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+eigenCent = function(A) { # Equation 7.6 in Newman 
+  x = degreeCent(A)
+  E = c()
+  k = max(eigen(A)$values)
+  for(i in 1:nrow(A)) {
+    E[i] = (A[i,] %*% x)
+    #browser()
+    E[i] = k^-1 * E[i]
+    names(E)[i] = row.names(A)[i]
+  }
+  return(E)
+}
+
+E = eigenCent(A)
+E
+```
+Eigenvector centrality doesn't work as well for directed networks because it penalizes those vertices that only have outgoing connections (by setting them to zero).
+
+### Katz Centrality
+Katz centrality corrects for this by giving each vertex some centrality for free.
+```{r warning=F}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+katz = function(A) { # 7.12 (7.9) in Newman
+  k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
+  alpha = 1/k - .05 # Slightly less than 1/max eigenvalue
+  B = rep(1, nrow(A))
+  x = rep(0, nrow(A)) #start with initial bad estimate of centrality
+  for(i in 1:ncol(A)) {
+    x = alpha*(A %*% x) + B
+  }
+  return(x)
+}
+
+x = katz(dirA)
+x
+```
+
+### PageRank
+Katz centrality shares the centrality love: if a vertex with high Katz centrality has edges pointing to many others, then those others also get high centrality.  PageRank accounts for this by making the centrality that each vertex derives from its network neighbors proportional to their centrality divided by their out degree (175).
+```{r}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+pageRank = function(A) { # Eq. 7.17 in Newman
+  D = diag(degreeCent(A))
+  alpha = 1/(max(as.numeric(eigen(A)$values)) - .05)
+  B = rep(1, nrow(A))
+  x = D%*%solve(D-(alpha * A))%*%B
+  row.names(x) = row.names(A)
+  return(x)
+}
+
+x = pageRank(dirA)
+x
+```
+
+### Hubs and Authorities
+Authorities are nodes that contain useful information on a topic of interest; hubs are nodes that tell us where the best authorities are to be found (Newman 179).
+
+#### The HITS Algorithm
+The HITS algorithm gives each vertex i in a network an authority centrality xi and a hub centrality yi. The defining characteristic of a vertex with high authority centrality is that it is pointed to by many hubs and the defining characteristic of a vertex with high hub centrality is that it points to many vertices with high authority centrality (Newman 178-179).
+
+```{r}
+dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
+dirA = matrix(dirA, 6, 6)
+colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+
+hits = function(A) { # Based on the text of Newman 180-181 and ~7.24.
+  # x = rep(1, ncol(A))
+  # names(x) = colnames(A)
+  # y = rep(1, ncol(A))
+  # names(y) = colnames(A)
+  # x = eigen(A %*% t(A))$vectors[,1] * x
+  # y = t(A) %*% x
+  # d = cbind(x, y)
+  # colnames(d) = c("x", "y")
+  x = eigenCent(A %*% t(A))
+  y = eigenCent(t(A) %*% A)
+  d = cbind(x,y)
+  return(d)
+}
+
+hits(dirA)
+```
+
+### Closeness Centrality
+Closeness centrality measures the mean distance from a vertex to other vertices (181). Closeness centrality is different than other measures of centrality because it accords low scores for those nodes that are closest to lots of nodes (greater centrality means lower scores). To correct for this, we'll take the inverse of the closeness measure.
+
+```{r}
+
+closeness = function(A) { # 7.29
+  C = c()
+  n = nrow(A)
+  for(i in 1:nrow(A)) {
+    dist = 0
+    for(j in 1:ncol(A)) {
+      dist = dist + geodesic(A,i,j)
+    }
+    C[i] = n / dist
+  }
+  names(C) = row.names(A)
+  return(C)
+}
+
+closeness(A)
+```
+
+
+### Betweenness Centrality
+Betweenness centrality measures the extent to which a vertex lies on paths between other vertices (185).  Betweenness centrality can be seen as an approximate guide to the influence vertices have over the flow of information between others (186).
+
+```{r}
+
+betweenness = function(A) {
+  geos = A
+  bet = c()
+  for(i in 1:nrow(A)){
+    for(j in 1:ncol(A)) {
+      geos[i,j] = geodesic(A,i,j)
+    }
+    bet[i] = length(which(geos[i,] != 0)) / ncol(A)
+  }
+  return(bet)
+}
+
+# This is incorrect, but I'm moving on.  Looking at the algorithms I can find online, this is very complex to implement.
+betweenness(A)
+```
+
+
+## Groups of Vertices (7.8)
+***
+### Cliques, Plexes, and Cores
+A clique is a maximal subset of vertices in an undirected network such that every member of the set is connected by an edge to every other.  Cliques are very rare since each vertex must be connected to every other vertex.  To solve this, we can use a *k-plex.* A *k*-plex of size *n* is a maximal subset of *n* vertices within a network such that each vertex is connected to at least *n-k* of the others. *k*-plexes are more common in real social networks since it is likely that some people within a friend group are not acquianted with one another.  *k-core*s are maximal subset of vertices such that each is connected to at least *k* others in the network. A *k-clique* is a maximal subset of vertices such that each is no more than a distance *k* away from any of the others via the edges of the network.
+
+### Components & *k*-Components
+A component in an undirected network is a maximal subset of vertices such that each is reachable by some path from each of the others. A *k-component* is a maximal subset of vertices such that each is reachable from each of the others by at least *k* vertex-independent paths.
+
+## Transitivity (7.9)
+A relation is transitive, and there exists a relation between u and w and v and w, there also exists a relation between u and v. Perfect transitivity depends on the presence of cliques, and is thus rare and mostly useless.  Partial transitivity is more useful because it can help us determine the probability that two nodes who are not necessarily connected share some relation.  Transitivity is measured using the clustering coefficient:
+```{r}
+cluster = function(A){  # 7.39
+  top = 0
+  bottom = numPaths(A, 2)
+  for(i in 1:nrow(A)){
+    for(j in 1:ncol(A)){
+      for(k in 1:ncol(A)){
+        if(i !=j && j != k && i != k){
+          if(A[i,k] > 0 && A[j,k] > 0 && A[i,j] > 0){
+            top = top + 1
+          }
+        }
+      }
+    }
+  }
+  C = top / bottom
+  return(C)
+}
+cluster(A)
+```
+
+### Local Clustering
+Local clustering calculates the clustering coefficient for a single vertex.
+```{r warning=F}
+
+localCluster = function(A, i){  #7.42
+  neighbors = which(A[i,] > 0)
+  top = 0
+  for(j in 1:length(neighbors)) {
+    if(j < length(neighbors)){
+      if(A[neighbors[j],neighbors[j+1]] > 0) {
+        top = top + 1
+      }
+    }
+  }
+  k = degree(A,i)
+  C = top/((1/2*k)*(k-1))
+  return(C)
+}
+
+localCluster(A, 2)
+```
+
+The clustering coefficient can be helpful to locate "structural holes" in a network.  These are places where expected connections are missing. The local clustering coefficeient measures how influential vertex *i* is by taking lower values the more structural holes there are in the network around *i*.  Newman argues that in this way it functions similarly to betweenness centrality, it may even be better for measuring the flow of information in a network.  He argues that "there may in many cases be little to be gained by performing the more costly full calculation of betweeness and much to be saved by sticking with clustering, given that the two contain much the same information" (202-203).
+```{r}
+
+# Using local clustering to get centralities of vertices.
+LC = c()
+for(i in 1:nrow(A)){
+  LC[i] = localCluster(A, i)
+  if(is.nan(LC[i])) {
+    LC[i] = 0
+  }
+}
+names(LC) = row.names(A)
+LC
+```
+
+
