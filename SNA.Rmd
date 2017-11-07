@@ -370,7 +370,7 @@ x
 
 ### PageRank
 Katz centrality shares the centrality love: if a vertex with high Katz centrality has edges pointing to many others, then those others also get high centrality.  PageRank accounts for this by making the centrality that each vertex derives from its network neighbors proportional to their centrality divided by their out degree (175).
-```{r}
+```{r, warning=F}
 dirA = c(0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0) # Matrix 6.6 in Newman (directed)
 dirA = matrix(dirA, 6, 6)
 colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
