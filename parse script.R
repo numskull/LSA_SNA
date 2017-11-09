@@ -1,6 +1,6 @@
 df = as.data.frame(df)
 df$date = as.numeric(as.character(df$date))
-matchesList = list()
+matchesList = rep(list(c()), length(estc$imprint))
 
 multiples = c()
 
@@ -89,7 +89,7 @@ for (i in 1:length(imps)) {
   matchesList[[i]] = row.names(df.r)[matches]
 }
 
-save(matchesList,file="matches_2.RData")
+save(matchesList,file="matches_3.RData")
 imprints = estc$imprint
 namesList = list()
 for (i in 1:length(matchesList)) {
@@ -103,10 +103,10 @@ for (i in 1:length(matchesList)) {
       namej = do.call(paste, c(as.list(df[row,]), sep="; "))
     }
     names = c(names,namej)
-    names = names[which(names != "character(0); character(0); numeric(0); character(0)")]
+    names = names[which(names != "character(0); character(0); numeric(0);")]
   }
   namesList[[i]] = names
 }
 save(namesList,file="names.RData")
-names(namesList)[1:length(imps)-1] = imps[1:length(imps)-1]
+names(namesList) = names(imps)
 

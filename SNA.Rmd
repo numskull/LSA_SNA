@@ -532,4 +532,59 @@ names(LC) = row.names(A)
 LC
 ```
 
+## Similarity (7.12)
+***
+There are two fundamental approaches to constructing measures of network similarity, called *structural equivalence* and *regular equivalence*. Two vertices in a network are structurally equivalent if they share many of the same network neighbors. Regularly equivalent vertices do not necessarily share the same neighbors, but they have neighbors *who are themselves similar* (211-212).
 
+### Cosine Similarity
+In network science, cosine similarity treats the rows (or columns) of the adjacency matrix as vectors and finds the angle between them as a a measure of structural similarity.
+
+```{r warning=F, message=F}
+netCos = function(A, i,j){ # Using 7.48 because it accounts for weighted networks.
+  library(expm)
+  mat = A %^% 2
+  top = A[i,] %*% A[j,]
+  bottom = sqrt(mat[i,]) %*% sqrt(mat[j,])
+  dist = top / bottom
+  return(dist)
+}
+
+netCos(A, 1,4)
+
+```
+
+### Pearson Coefficients
+Pearson coefficients are based on the expected number of neighbors for a given vertex.
+
+```{r}
+
+pearson = function(A,i,j) { # 7.52
+  n = nrow(A)
+  cov = (A[i,] - (n^1 * A[i,])) %*% (A[j,] - (n^1 * A[j,]))
+  bottom = sqrt((A[i,] - (n^1 * A[i,]))^2) %*% sqrt((A[j,] - (n^1 * A[j,]))^2)
+  r = cov / bottom
+  return(r)
+}
+
+pearson(A, 1, 3)
+```
+
+### Regular Equivalence
+Methods for regular equivalence are less well-developed.  The one Newman presents is similar to katz centrality.
+```{r}
+regEq = function(A, i=0, j=0) { # 7.63
+  k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
+  alpha = 1/k - .05 # Slightly less than 1/max eigenvalue
+  I = diag(1, nrow(A), ncol(A))
+  sim = (I - alpha * A)^-1
+  # D = diag(degreeCent(A))
+  # print(D)
+  # sim = (D - (alpha * A))^-1 %*% D
+  if(i != 0 && j != 0){
+    return(sim[i,j])
+  }
+  return(sim)
+}
+
+regEq(A)
+```
