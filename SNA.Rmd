@@ -328,16 +328,11 @@ colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to ha
 rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 
 eigenCent = function(A) { # Equation 7.6 in Newman 
-  x = degreeCent(A)
-  E = c()
-  k = max(eigen(A)$values)
-  for(i in 1:nrow(A)) {
-    E[i] = (A[i,] %*% x)
-    #browser()
-    E[i] = k^-1 * E[i]
-    names(E)[i] = row.names(A)[i]
+  x = rep(1, nrow(A))
+  for(i in 1:200) {
+    x = A %*% x
   }
-  return(E)
+  return(x/max(x))
 }
 
 E = eigenCent(A)
@@ -576,7 +571,10 @@ regEq = function(A, i=0, j=0) { # 7.63
   k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
   alpha = 1/k - .05 # Slightly less than 1/max eigenvalue
   I = diag(1, nrow(A), ncol(A))
-  sim = (I - alpha * A)^-1
+  sim = matrix(0, nrow(A), ncol(A))
+  for(i in 1:200){
+    sim = (alpha * A) %*% (sim %*% A) + I
+  }
   # D = diag(degreeCent(A))
   # print(D)
   # sim = (D - (alpha * A))^-1 %*% D
@@ -587,4 +585,81 @@ regEq = function(A, i=0, j=0) { # 7.63
 }
 
 regEq(A)
+```
+
+## Homopholy and Assortative Mixing
+People have a strong tendency to associate with others whome they perceive as being similar to themselves in some way. This tendency is called *homopholy* or *assortative mixing*.
+
+The first type of homopholy measurement is modularity and is based on classificatory or type designations for vertices.
+```{r}
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+classes = c(1,2,1,1,2,2)
+I = diag(1, nrow(A), ncol(A))
+
+mod = function(A, classes, matrix = F) { # 7.69
+  m2 = sum(A)
+  mod = 0
+  mat = A
+  for(i in 1:nrow(A)) {
+    for(j in 1:nrow(A)) {
+      mat[i,j] = (A[i,j] - (degree(A,i) * degree(A,j) / m2)) 
+      mod = mod + (mat[i,j] * I[classes[i],classes[j]])
+    }
+  }
+  if(matrix == T) {
+    return(mat)
+  }
+  mod = 1/m2 * mod
+  return(mod)
+}
+
+mod(A, classes) # Gives exactly the same value as igraph's modularity function.
+B = mod(A, classes, T) # Also the exact same matrix as igraph's modularity function.
+B
+```
+
+The second type is covariance which is used for scalar measures like age.
+```{r}
+A = c(0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0) # Matrix 6.2 in Newman
+A = matrix(A, 6,6)
+colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
+rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
+ages = c(15,20,17,18,22,21)
+I = diag(1, nrow(A), ncol(A))
+
+cov = function(A, scalar) { # 7.78
+  m2 = sum(A)
+  cov = 0
+  for(i in 1:nrow(A)) {
+    for(j in 1:nrow(A)) {
+      cov = cov + ((A[i,j] - (degree(A,i) * degree(A,j) / m2))) * (scalar[i] * scalar[j])
+    }
+  }
+  cov = 1/m2 * cov
+  return(cov)
+}
+
+cov(A, ages)
+```
+
+Assortative mixing can also be calculated using degree measurements.
+```{r}
+
+assortDegree = function(A) { # 7.81
+  m2 = sum(A)
+  assort = 0
+  for(i in 1:nrow(A)) {
+    for(j in 1:nrow(A)) {
+      assort = assort + (A[i,j]  - (degree(A,i) * degree(A,j) / m2)) * (degree(A,i) * degree(A,j))
+    }
+  }
+  assort = 1/m2 * assort
+  return(assort)
+}
+
+assortDegree(A)
+
 ```

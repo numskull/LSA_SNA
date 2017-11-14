@@ -173,3 +173,59 @@ cluster = function(A){
   C = top / bottom
   return(C)
 }
+
+newdf = c()
+for(i in 1:nrow(df)){
+  newdf[i] = do.call(paste, c(as.list(df[i,]), sep="; "))
+}
+mat = matrix(0, length(newdf), length(newdf))
+names(mat) = newdf
+row.names(mat) = newdf
+
+for(i in 1:length(namesList)) {
+  print(i)
+  names = namesList[[i]]
+  if(length(names) > 1) {
+    prev = c()
+    for(j in 1:length(names) - 1) {
+      if(j > 1) {
+        prev = c(prev, names[j-1])
+      }
+      jname = which(row.names(mat) == names[j])
+      iname = which(row.names(mat) == names[j+1])
+      mat[jname,iname] = 1
+      if(length(prev) > 1) {
+        for(k in 1:length(prev)) {
+          prevName = which(row.names(mat) == prev[k])
+          mat[jname, prevName] = 1
+        }
+      }
+    }
+  }
+}
+
+namesVec = c()
+idsVec = c()
+edges = data.frame()
+B = data.frame()
+for(i in 1:length(namesList)) {
+  if(length(namesList[[i]]) > 0) {
+    names = namesList[[i]]
+    for(j in 1:length(names)){
+      namesVec = c(namesVec, names[j])
+      idsVec = c(idsVec, names(namesList)[i])
+    }
+  }
+}
+library(Matrix)
+B = Matrix(0, 177720, 177720)
+colnames(B) = edges$idsVec
+rownames(B) = edges$namesVec
+edges$namesVec = as.character(edges$namesVec)
+edges$idsVec = as.character(edges$idsVec)
+for (i in 1:nrow(edges)) {
+  person = edges[i,1]
+  book = edges[i,2]
+  B[person,book] = 1
+}
+
