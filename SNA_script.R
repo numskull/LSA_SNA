@@ -229,3 +229,36 @@ for (i in 1:nrow(edges)) {
   B[person,book] = 1
 }
 
+cumDist = function(md) {
+  md = sort(md, decreasing = T)
+  dist = c()
+  for(i in 1:length(md)) {
+    dist[i] = i/length(md)
+  }
+  return(dist)
+}
+
+md = c()
+for(i in 1:nrow(B)) {
+  md[i] = degree(B, i)
+}
+
+moment = function(md, m) { #8.20
+  km = 0
+  for(i in 1:length(md)){
+    km =  km + (md[i]^m)
+  }
+  return(1/length(md) * km)
+}
+
+
+clusterDist = function(n, md) { #8.24 Gives the clustering expected by random chance.
+  C = 0
+  top = (moment(md,2) - moment(md,1))^2
+  bottom = moment(md,3)
+  C = 1/n* (top/bottom)
+  return(C)
+}
+
+library(rARPACK)
+kat = katz(p2p, eigs(p2p,1, which="LM")$values[1])

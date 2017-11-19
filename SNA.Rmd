@@ -327,15 +327,15 @@ A = matrix(A, 6,6)
 colnames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
 rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 
-eigenCent = function(A) { # Equation 7.6 in Newman 
+eigenCent = function(A, iter) { # Equation 7.6 in Newman 
   x = rep(1, nrow(A))
-  for(i in 1:200) {
+  for(i in 1:iter) {
     x = A %*% x
   }
   return(x/max(x))
 }
 
-E = eigenCent(A)
+E = eigenCent(A, 200)
 E
 ```
 Eigenvector centrality doesn't work as well for directed networks because it penalizes those vertices that only have outgoing connections (by setting them to zero).
@@ -348,8 +348,10 @@ dirA = matrix(dirA, 6, 6)
 colnames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha") # I like to have names to make this easier.
 rownames(dirA) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 
-katz = function(A) { # 7.12 (7.9) in Newman
-  k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
+katz = function(A, k=0) { # 7.12 (7.9) in Newman
+  if(k == 0){
+    k = max(as.numeric(eigen(A)$values))  # Directed graphs give complex number values.
+  }
   alpha = 1/k - .05 # Slightly less than 1/max eigenvalue
   B = rep(1, nrow(A))
   x = rep(0, nrow(A)) #start with initial bad estimate of centrality
@@ -663,3 +665,8 @@ assortDegree = function(A) { # 7.81
 assortDegree(A)
 
 ```
+
+# Chapter 14
+This section will be mostly notes I take as I read through Chapter 14 of Newman.  This chapter is concerned with *generative models* of network formation.  Generative models model the mechanisms by which networks are created to explore hypothesized generative mechanisms to see what structures they produce; if the structures are similar to those of networks we observe in the real world, it suggests that similar generative mechanisms may be at work in the real networks (486-87).
+
+## Preferential Attachment

@@ -21,19 +21,39 @@ ppmi = function(df) { # Turney and Pantel, p. 157
   for(i in 1:length(df[,1])){
     sumR = sum(df[i,])
     for(j in 1:length(df[1,])){
+      print(c(i, " ", j))
       colSum = sum(df[,j])
       pij = (df[i,j] / total)
       pi = sumR / total
       pj = colSum / total
       pmi = log(pij/(pi * pj))
       #browser()
-      if (pmi < 0){
-        pmi = 0
+      print(pmi)
+      if (!is.na(pmi)){
+        if(pmi < 0) {
+          pmi = 0
+        }
+        newDf[i,j] = pmi
       }
-      newDf[i,j] = pmi
     }
   }
   return(newDf)
+}
+
+ppmi = function(mat) {
+  total = sum(mat, na.rm = T)
+  pcol = colSums(mat) / total
+  prow = rowSums(mat) / total
+  for (i in 1:nrow(mat)) {
+    print(i)
+    row = mat[i,]
+    row = row / total
+    row = log(row / (prow[i] * pcol))
+    ord = which(row < 0)
+    row[ord] = 0
+    mat[i,] = row
+  }
+  return(mat)
 }
 
 euclidSim = function(df, term) {
@@ -206,4 +226,39 @@ v = s$v
 u = s$u
 s = diag(s$d[1:5])
 
+titleVoc = paste(estc$main_title, estc$continuation_of_title, sep=" ")
+titleVoc = paste(titleVoc, sep = " ")
+titleVoc = gsub("[[:punct:]]", "", titleVoc)
+test = ""
+for(i in 1:length(titleVoc)) {
+  test = paste(test, titleVoc[i], sep = " ")
+}
+test = gsub("[[:punct:]]", "", test)
+vocab = unique(tolower(strsplit(test, " ")[[1]]))
+
+Text = Matrix(0, length(vocab), length(estc$estc_cit_number))
+row.names(Text) = vocab
+colnames(Text) = estc$estc_cit_number
+names(titleVoc) = estc$estc_cit_number
+
+for(i in 1:length(estc$estc_cit_number)) {
+  print(i)
+  ID = estc$estc_cit_number[i]
+  words = table(strsplit(titleVoc[i], " "))
+  indices = which(row.names(Text) %in% names(words))
+  for(j in 1:length(words)) {
+    if(names(words)[j] %in% vocab) {
+      Text[words[j], i] = words[j]
+    }
+  }
+}
+
+
+library(irlba)
+s = irlba(Text, nv = 500, nu=500)
+U = s$u
+V = s$v
+s = s$d[1:500]
+s = diag(s)
+sort(unitUnitSim(Text, u, s, "printed"), decreasing = T)[1:10]
 
