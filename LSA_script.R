@@ -255,10 +255,10 @@ for(i in 1:length(estc$estc_cit_number)) {
 
 
 library(irlba)
-s = irlba(Text, nv = 500, nu=500)
+s = irlba(Text, nv = 100, nu=100)
 U = s$u
 V = s$v
-s = s$d[1:500]
+s = s$d[1:100]
 s = diag(s)
-sort(unitUnitSim(Text, u, s, "printed"), decreasing = T)[1:10]
+sort(unitUnitSim(Text, U, s, "property"), decreasing = T)[1:10]
 

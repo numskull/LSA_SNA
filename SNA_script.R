@@ -310,3 +310,25 @@ tops = c(tops,sort(degreeCent(mat1670), decreasing=T)[1:2])
 tops = c(tops,sort(degreeCent(mat1680), decreasing=T)[1:2])
 tops = c(tops,sort(degreeCent(mat1690), decreasing=T)[1:2])
 tops = c(tops,sort(degreeCent(mat1700), decreasing=T)[1:2])
+
+
+# Barabassi-Albert
+verts = which(colSums(B != 0)  > 0)
+ranGraph = Matrix(0, nrow(B), ncol(B), sparse = T)
+row.names(ranGraph) = row.names(B)
+colnames(ranGraph) = colnames(B)
+cof = c()
+for(i in 1:nrow(B)) {
+  print(i)
+  r = runif(1, 0, 1)
+  if(r < .5){
+    target = sample(1:length(verts), 1)
+    ranGraph[i, target] = 1
+  } else {
+    existing = which(colSums(ranGraph != 0) > 0)
+    index = sample(1:length(existing), 1)
+    target = existing[index]
+    ranGraph[i, target] = 1
+  }
+  cof = c(cof, cluster(ranGraph))
+}

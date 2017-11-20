@@ -214,9 +214,12 @@ rownames(A) = c("Bill", "Ted", "Jane", "Sally", "Mark", "Marsha")
 
 numPaths = function(A, len){ # 6.31
   N = 0
+  for(i in 1:len) {
+    A = A %*% A
+  }
   for(i in 1:length(A[,1])) {
     for(j in 1:length(A[1,])) {
-      if((A%^%len)[i,j] == len){
+      if(A[i,j] == len){
         N = N+1
       }
     }
@@ -471,8 +474,9 @@ A component in an undirected network is a maximal subset of vertices such that e
 
 ## Transitivity (7.9)
 A relation is transitive, and there exists a relation between u and w and v and w, there also exists a relation between u and v. Perfect transitivity depends on the presence of cliques, and is thus rare and mostly useless.  Partial transitivity is more useful because it can help us determine the probability that two nodes who are not necessarily connected share some relation.  Transitivity is measured using the clustering coefficient:
-```{r}
+```{r, warning=F}
 cluster = function(A){  # 7.39
+  library(expm)
   top = 0
   bottom = numPaths(A, 2)
   for(i in 1:nrow(A)){
