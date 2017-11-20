@@ -262,3 +262,51 @@ clusterDist = function(n, md) { #8.24 Gives the clustering expected by random ch
 
 library(rARPACK)
 kat = katz(p2p, eigs(p2p,1, which="LM")$values[1])
+
+## Decade Mats
+mat1470 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1470),]
+mat1500 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1470 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1500),]
+mat1510 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1500 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1510),]
+mat1520 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1510 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1520),]
+mat1530 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1520 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1530),]
+mat1540 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1530 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1540),]
+mat1550 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1540 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1550),]
+mat1560 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1550 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1560),]
+mat1570 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1560 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1570),]
+mat1580 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1570 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1580),]
+mat1590 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1580 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1590),]
+mat1600 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1590 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1600),]
+mat1610 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1600 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1610),]
+mat1620 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1610 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1620),]
+mat1630 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1620 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1630),]
+mat1640 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1630 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1640),]
+mat1650 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1640 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1650),]
+mat1660 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1650 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1660),]
+mat1670 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1660 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1670),]
+mat1680 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1670 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1680),]
+mat1690 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1680 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1690),]
+mat1700 = B[which(sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) > 1690 & sub(".*(\\d+{4}).*$", "\\1", row.names(p2p)) < 1700),]
+
+tops = c()
+tops = c(tops,sort(degreeCent(mat1470), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1500), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1510), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1520), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1530), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1540), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1550), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1560), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1570), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1580), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1590), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1600), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1610), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1620), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1630), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1640), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1650), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1660), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1670), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1680), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1690), decreasing=T)[1:2])
+tops = c(tops,sort(degreeCent(mat1700), decreasing=T)[1:2])
