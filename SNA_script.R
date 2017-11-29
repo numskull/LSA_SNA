@@ -217,17 +217,25 @@ for(i in 1:length(namesList)) {
     }
   }
 }
+
 library(Matrix)
-B = Matrix(0, 177720, 177720)
-colnames(B) = edges$idsVec
-rownames(B) = edges$namesVec
+B = Matrix(0, length(unique(namesVec)), length(unique(idsVec)))
+colnames(B) = unique(edges$idsVec)
+rownames(B) = unique(edges$namesVec)
 edges$namesVec = as.character(edges$namesVec)
 edges$idsVec = as.character(edges$idsVec)
 for (i in 1:nrow(edges)) {
+  print(i)
   person = edges[i,1]
   book = edges[i,2]
   B[person,book] = 1
 }
+
+auths = estc$author_name
+test = data.frame()
+namesVec = c(edges$namesVec, auths)
+idsVec = c(edges$idsVec, estc$estc_cit_number)
+authNames = c()
 
 cumDist = function(md) {
   md = sort(md, decreasing = T)
@@ -330,5 +338,8 @@ for(i in 1:nrow(B)) {
     target = existing[index]
     ranGraph[i, target] = 1
   }
-  cof = c(cof, cluster(ranGraph))
+  #cof = c(cof, cluster(ranGraph))
 }
+cluster(mat1500 %*% t(mat1500))
+plot(table(degreeCent(ranGraph)))
+ranP2P = ranGraph %*% t(ranGraph)

@@ -226,11 +226,12 @@ unitUnit(df, u,s, 'king', 'battle') # Similarity scores between two specific ter
 unitUnitSim = function(df,u,s, term) {
   i = which(row.names(df) == term)
   us = u %*% s
+  st = s %*% t(u)
   terms = c()
   for(j in 1:nrow(u)){
     dist = 0
     if(j != i) {
-      top = top = u[i,] %*% s %*% s %*% t(u)[,j]
+      top = us[i,] %*% st[,j]
       bottom = sqrt((us[i,] %*% us[i,])) %*% sqrt((us[j,] %*% us[j,]))
       dist = top / bottom
       terms[j] = dist

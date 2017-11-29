@@ -410,8 +410,8 @@ hits = function(A) { # Based on the text of Newman 180-181 and ~7.24.
   # y = t(A) %*% x
   # d = cbind(x, y)
   # colnames(d) = c("x", "y")
-  x = eigenCent(A %*% t(A))
-  y = eigenCent(t(A) %*% A)
+  x = eigenCent(A %*% t(A), 50)
+  y = eigenCent(t(A) %*% A, 50)
   d = cbind(x,y)
   return(d)
 }
