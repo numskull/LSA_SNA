@@ -231,6 +231,7 @@ titleVoc = paste(titleVoc, sep = " ")
 titleVoc = gsub("[[:punct:]]", "", titleVoc)
 test = ""
 for(i in 1:length(titleVoc)) {
+  test = paste(test, " ", sep=" ")
   test = paste(test, titleVoc[i], sep = " ")
 }
 test = gsub("[[:punct:]]", "", test)
