@@ -235,7 +235,11 @@ for(i in 1:length(titleVoc)) {
   test = paste(test, titleVoc[i], sep = " ")
 }
 test = gsub("[[:punct:]]", "", test)
-vocab = unique(tolower(strsplit(test, " ")[[1]]))
+test = gsub('[[:digit:]]+', '', test)
+spTest = table(tolower(strsplit(test, " ")[[1]]))
+spTest = spTest[which(spTest > 5)]
+spTest = spTest[which(spTest != " ")]
+vocab = unique(namnes(spTest))
 
 Text = Matrix(0, length(vocab), length(estc$estc_cit_number))
 row.names(Text) = vocab
@@ -256,10 +260,10 @@ for(i in 1:length(estc$estc_cit_number)) {
 
 
 library(irlba)
-s = irlba(Text, nv = 100, nu=100)
+s = irlba(Text, nv = 300, nu=300)
 U = s$u
 V = s$v
-s = s$d[1:100]
+s = s$d
 s = diag(s)
 sort(unitUnitSim(Text, U, s, "property"), decreasing = T)[1:10]
 

@@ -343,3 +343,16 @@ for(i in 1:nrow(B)) {
 cluster(mat1500 %*% t(mat1500))
 plot(table(degreeCent(ranGraph)))
 ranP2P = ranGraph %*% t(ranGraph)
+
+Years = estc$pub_year
+degreeDists = c()
+
+
+for(i in 1:length(unique(Years))) {
+  print(i)
+  year = unique(Years)[i]
+  dims = B[,which(Years == year)]
+  degreeDists[i] = table(degreeCent(dims))
+}
+
+#ESTC data has about 40k multiple estc numbers

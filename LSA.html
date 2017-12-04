@@ -408,11 +408,12 @@ unitUnit(df, u,s, 'king', 'battle') # Similarity scores between two specific ter
 <pre class="r"><code>unitUnitSim = function(df,u,s, term) {
   i = which(row.names(df) == term)
   us = u %*% s
+  st = s %*% t(u)
   terms = c()
   for(j in 1:nrow(u)){
     dist = 0
     if(j != i) {
-      top = top = u[i,] %*% s %*% s %*% t(u)[,j]
+      top = us[i,] %*% st[,j]
       bottom = sqrt((us[i,] %*% us[i,])) %*% sqrt((us[j,] %*% us[j,]))
       dist = top / bottom
       terms[j] = dist
@@ -456,10 +457,11 @@ compComp(df,v,s, colnames(df)[2], colnames(df)[4]) #1H6 and 2H6</code></pre>
   i = which(colnames(df) == d1)
   docs = c()
   vs = v %*% s
+  st = s %*% t(v)
   for(j in 1:nrow(v)) {
     dist = 0
     if(j != i) {
-      top = v[i,] %*% s %*% s %*% t(v)[,j]
+      top = vs[i,] %*% st[,j]
       bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       dist = top / bottom
       docs[j] = dist
@@ -484,6 +486,7 @@ s = svd(df, nv=5, nu=5)
 v = s$v
 u = s$u
 s = diag(s$d[1:5])
+tv = t(v)
 unitComp = function(df, u,s,v, term, doc) {  # Bellegarda 3.6
   
   i = which(row.names(df) == term)
@@ -491,23 +494,24 @@ unitComp = function(df, u,s,v, term, doc) {  # Bellegarda 3.6
   
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
-  top = u[i,] %*% s %*% t(v)[,j]
+  top = us[i,] %*% tv[,j]
   bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
   return(top/bottom)
 }
 
 unitComp(df,u,s,v, 'battle', 'H5') # How similar/important is the concept of battle to Henry 5</code></pre>
 <pre><code>##           [,1]
-## [1,] 0.8123138</code></pre>
+## [1,] 0.0196195</code></pre>
 <pre class="r"><code>unitCompSim = function(df,u,s,v, term=&quot;&quot;, comp=&quot;&quot;) {
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
+  tv = t(v)
   if(term != &quot;&quot;) {
     i = which(row.names(df) == term)
     docs = c()
     for(j in 1:nrow(v)) {
       dist = 0
-      top = u[i,] %*% s %*% t(v)[,j]
+      top = us[i,] %*% tv[,j]
       bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       docs[j] = top / bottom
       names(docs)[j] = colnames(df)[j]
@@ -518,7 +522,7 @@ unitComp(df,u,s,v, 'battle', 'H5') # How similar/important is the concept of bat
     docs = c()
     for(j in 1:nrow(u)) {
       dist = 0
-      top = u[j,] %*% s %*% t(v)[,i]
+      top = us[j,] %*% tv[,i]
       bottom = sqrt(us[j,] %*% us[j,]) %*% sqrt(vs[i,] %*% vs[i,])
       docs[j] = top / bottom
       names(docs)[j] = row.names(df)[j]
@@ -530,16 +534,16 @@ unitComp(df,u,s,v, 'battle', 'H5') # How similar/important is the concept of bat
 }
 test = unitCompSim(df, u,s,v, 'battle') # How similar is battle to all documents
 sort(test, decreasing=T)[1:10] # What documents are most similar to the concept battle</code></pre>
-<pre><code>##        R3      X2H6        R2      X3H6      X1H6        Jn        H5 
-## 0.8656633 0.8596189 0.8540616 0.8437928 0.8292988 0.8131842 0.8123138 
-##        H8       Ant      X1H4 
-## 0.6124906 0.6065450 0.6019474</code></pre>
+<pre><code>##       X3H6         R3       X2H6         R2         H5       X1H6 
+## 0.02241439 0.02109935 0.02106997 0.02101611 0.01961950 0.01934192 
+##         Jn        Ant         JC         H8 
+## 0.01852357 0.01780787 0.01718143 0.01340843</code></pre>
 <pre class="r"><code>test = unitCompSim(df,u, s, v, &quot;&quot;, &quot;H5&quot;) # What terms are most similar to H5?
 sort(test, decreasing=T)[1:10]</code></pre>
-<pre><code>## accompanied      curses      safety     guarded       widow       privy 
-##   0.9920776   0.9870629   0.9838965   0.9821229   0.9820618   0.9801702 
-##         few      bodies     princes       grace 
-##   0.9795663   0.9788889   0.9783581   0.9782783</code></pre>
+<pre><code>##     majesty      french  coronation    highness christendom        king 
+##  0.02551018  0.02547268  0.02544072  0.02541637  0.02536596  0.02533816 
+##        pope    holiness    cardinal   constable 
+##  0.02525486  0.02521716  0.02520019  0.02514779</code></pre>
 </div>
 </div>
 

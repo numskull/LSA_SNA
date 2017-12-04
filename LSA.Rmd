@@ -271,10 +271,11 @@ compCompSim = function(df,v,s, d1) {
   i = which(colnames(df) == d1)
   docs = c()
   vs = v %*% s
+  st = s %*% t(v)
   for(j in 1:nrow(v)) {
     dist = 0
     if(j != i) {
-      top = v[i,] %*% s %*% s %*% t(v)[,j]
+      top = vs[i,] %*% st[,j]
       bottom = sqrt(vs[i,] %*% vs[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       dist = top / bottom
       docs[j] = dist
@@ -297,6 +298,7 @@ s = svd(df, nv=5, nu=5)
 v = s$v
 u = s$u
 s = diag(s$d[1:5])
+tv = t(v)
 unitComp = function(df, u,s,v, term, doc) {  # Bellegarda 3.6
   
   i = which(row.names(df) == term)
@@ -304,7 +306,7 @@ unitComp = function(df, u,s,v, term, doc) {  # Bellegarda 3.6
   
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
-  top = u[i,] %*% s %*% t(v)[,j]
+  top = us[i,] %*% tv[,j]
   bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
   return(top/bottom)
 }
@@ -314,12 +316,13 @@ unitComp(df,u,s,v, 'battle', 'H5') # How similar/important is the concept of bat
 unitCompSim = function(df,u,s,v, term="", comp="") {
   us = u %*% sqrt(s)
   vs = v %*% sqrt(s)
+  tv = t(v)
   if(term != "") {
     i = which(row.names(df) == term)
     docs = c()
     for(j in 1:nrow(v)) {
       dist = 0
-      top = u[i,] %*% s %*% t(v)[,j]
+      top = us[i,] %*% tv[,j]
       bottom = sqrt(us[i,] %*% us[i,]) %*% sqrt(vs[j,] %*% vs[j,])
       docs[j] = top / bottom
       names(docs)[j] = colnames(df)[j]
@@ -330,7 +333,7 @@ unitCompSim = function(df,u,s,v, term="", comp="") {
     docs = c()
     for(j in 1:nrow(u)) {
       dist = 0
-      top = u[j,] %*% s %*% t(v)[,i]
+      top = us[j,] %*% tv[,i]
       bottom = sqrt(us[j,] %*% us[j,]) %*% sqrt(vs[i,] %*% vs[i,])
       docs[j] = top / bottom
       names(docs)[j] = row.names(df)[j]
