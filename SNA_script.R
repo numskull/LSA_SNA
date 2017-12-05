@@ -219,8 +219,8 @@ for(i in 1:length(namesList)) {
 }
 
 library(Matrix)
-B = Matrix(0, length(unique(namesVec)), length(unique(idsVec)))
-colnames(B) = unique(edges$idsVec)
+B = Matrix(0, length(unique(namesVec)), length(estc$estc_cit_number))
+colnames(B) = estc$estc_cit_number
 rownames(B) = unique(edges$namesVec)
 edges$namesVec = as.character(edges$namesVec)
 edges$idsVec = as.character(edges$idsVec)
@@ -229,6 +229,12 @@ for (i in 1:nrow(edges)) {
   person = edges[i,1]
   book = edges[i,2]
   B[person,book] = 1
+}
+NewEstc = data.frame()
+for(i in nrow(estc)){
+  if(!(estc[i,] == estc[i+1,])) {
+    NewEstc[i] = estc[i,]
+  }
 }
 
 auths = estc$author_name

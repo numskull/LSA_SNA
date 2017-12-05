@@ -241,10 +241,10 @@ spTest = spTest[which(spTest > 5)]
 spTest = spTest[which(spTest != " ")]
 vocab = unique(namnes(spTest))
 
-Text = Matrix(0, length(vocab), length(estc$estc_cit_number))
+Text = Matrix(0, length(vocab), length(unique(estc$estc_cit_number)))
 row.names(Text) = vocab
-colnames(Text) = estc$estc_cit_number
-names(titleVoc) = estc$estc_cit_number
+colnames(Text) = unique(estc$estc_cit_number)
+names(titleVoc) = unique(estc$estc_cit_number)
 
 for(i in 1:length(estc$estc_cit_number)) {
   print(i)
